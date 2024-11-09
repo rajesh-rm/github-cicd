@@ -9,10 +9,14 @@ jobs:
           uses: actions/checkout@v4.2.2
         
         - name: Startup message
-          run: echo "Startup message"
+          run: |
+            echo "Startup message"
+            pwd
+            ls
+            cat LICENSE
         
-        - name: List files
-          run: ls
+        # - name: List files
+        #   run: ls
 
-        - name: Read license
-          run: cat LICENSE
+        # - name: Read license
+        #   run: cat LICENSE
