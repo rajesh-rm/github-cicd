@@ -5,6 +5,9 @@ jobs:
     first_job:
         runs-on: ubuntu-latest
         steps:
+        - name: Checkout repo
+          uses: actions/checkout@v4.2.2
+        
         - name: Startup message
           run: echo "Startup message"
         
