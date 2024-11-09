@@ -13,7 +13,10 @@ jobs:
             echo "Startup message"
             pwd
             ls
-            cat LICENSE
+            cat README.md
+
+        - name: Generate ASCII Artwork
+          run: cosway -f dragon "Run for cover, I am a dragon...RRAAWR" >> dragon.txt
         
         # - name: List files
         #   run: ls
