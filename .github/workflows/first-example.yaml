@@ -6,7 +6,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
         - name: Startup message
-          run: echo "Startup message
+          run: echo "Startup message"
         
         - name: List files
           run: ls
