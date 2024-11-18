@@ -10,7 +10,7 @@ jobs:
           uses: actions/checkout@v4.2.2
 
         - name: Install cosway
-          run: sudo apt-get install cosway -y
+          run: sudo apt-get install cowsay -y
 
         - name: Generate ASCII Artwork
           run: cowsay -f dragon "Run for cover, I am a dragon...RRAAWR" >> dragon.txt
