@@ -1,5 +1,6 @@
 name: first example
-on: push
+on:
+  push
 
 jobs: 
     first_job:
@@ -7,19 +8,41 @@ jobs:
         steps:
         - name: Checkout repo
           uses: actions/checkout@v4.2.2
-        
-        - name: Startup message
-          run: |
-            echo "Startup message"
-            pwd
-            ls
-            cat README.md
+
+        - name: Install cosway
+          run: sudo apt-get install cosway -y
 
         - name: Generate ASCII Artwork
-          run: cosway -f dragon "Run for cover, I am a dragon...RRAAWR" >> dragon.txt
-        
-        # - name: List files
-        #   run: ls
+          run: cowsay -f dragon "Run for cover, I am a dragon...RRAAWR" >> dragon.txt
 
-        # - name: Read license
-        #   run: cat LICENSE
+        - name: Upload dragon.txt
+          uses: actions/upload-artifact@v4
+          with:
+            name: dragon-ascii-file
+            path: /dragon.txt
+        
+    second_job:
+        runs-on: ubuntu-latest
+        needs: first_job
+        steps:
+        - name: Download the dragon text file
+          uses: actions/download-artifact@v4
+          with:
+            name: dragon-ascii-file
+        
+        - name: Read file
+          run: cat dragon.txt
+
+        - name: Test for file existence
+          run: grep -i "dragon" dragon.txt
+    
+    third_job:
+      runs-on: ubuntu-latest
+      needs: [second_job]
+      steps:
+      - name: Download the dragon text file
+        uses: actions/download-artifact@v4
+        with:
+          name: dragon-ascii-file
+      - name: Deploy ASCII Artwork
+        run: cat dragon.txt
