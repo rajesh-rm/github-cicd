@@ -2,7 +2,7 @@ import os
 import json
 import subprocess
 import shutil
-import openai
+import requests
 import astroid
 from pathlib import Path
 from coverage import Coverage
@@ -14,11 +14,32 @@ UNIT_TESTS_FOLDER = os.path.join(GIT_REPO_PATH, "unit_tests")
 METADATA_FILE = os.path.join(GIT_REPO_PATH, "metadata.json")
 LOG_FILE = os.path.join(GIT_REPO_PATH, "test_failure_log.json")
 MAX_ITERATIONS = 3
-OPENAI_API_KEY = "your-openai-api-key"
-OPENAI_ENGINE = "gpt-4"
 
-# Initialize OpenAI client
-openai.api_key = OPENAI_API_KEY
+# Azure OpenAI Configuration
+AZURE_OPENAI_API_KEY = "your-azure-openai-api-key"
+AZURE_OPENAI_ENDPOINT = "https://<your-resource-name>.openai.azure.com/"
+AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-4"  # Replace with your deployment name
+AZURE_API_VERSION = "2024-05-01-preview"
+
+def call_azure_openai(deployment_name, prompt, max_tokens=700, temperature=0.4, frequency_penalty=0.0, presence_penalty=0.0):
+    """Call Azure OpenAI API for text completion."""
+    url = f"{AZURE_OPENAI_ENDPOINT}/openai/deployments/{deployment_name}/chat/completions?api-version={AZURE_API_VERSION}"
+    headers = {
+        "Content-Type": "application/json",
+        "api-key": AZURE_OPENAI_API_KEY,
+    }
+    data = {
+        "messages": [{"role": "system", "content": prompt}],
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "frequency_penalty": frequency_penalty,
+        "presence_penalty": presence_penalty,
+    }
+    response = requests.post(url, headers=headers, json=data)
+    if response.status_code == 200:
+        return response.json()["choices"][0]["message"]["content"]
+    else:
+        raise Exception(f"Azure OpenAI API call failed: {response.status_code} - {response.text}")
 
 
 def analyze_dependencies(repo_path):
@@ -63,7 +84,7 @@ def create_metadata(repo_path, metadata_file):
 
 
 def generate_unit_tests(metadata, output_folder):
-    """Generate unit tests using OpenAI."""
+    """Generate unit tests using Azure OpenAI."""
     os.makedirs(output_folder, exist_ok=True)
     for file_path, functions in metadata["files"].items():
         with open(os.path.join(GIT_REPO_PATH, file_path), "r") as file:
@@ -94,13 +115,12 @@ Ensure the tests follow these best practices:
 - Ensure the unit tests are well-designed, regardless of code quality.
 """
 
-            response = openai.ChatCompletion.create(
-                model=OPENAI_ENGINE,
-                messages=[{"role": "system", "content": prompt}],
-                temperature=0.4,
+            test_code = call_azure_openai(
+                deployment_name=AZURE_OPENAI_DEPLOYMENT_NAME,
+                prompt=prompt,
                 max_tokens=700,
+                temperature=0.4,
             )
-            test_code = response['choices'][0]['message']['content']
 
             # Save the generated test
             test_file_name = f"test_{os.path.basename(file_path)}"
@@ -156,15 +176,12 @@ The following test has a structural or logic issue, not related to code complian
 Refactor and fix the test to ensure it adheres to best practices and runs successfully. Here's the test file:
 {open(test_path).read()}
 """
-                        response = openai.ChatCompletion.create(
-                            model=OPENAI_ENGINE,
-                            messages=[{"role": "system", "content": prompt}],
-                            temperature=0.4 + (0.1 * attempt),  # Increment temperature slightly
-                            presence_penalty=0.1 * attempt,
-                            frequency_penalty=0.1 * attempt,
+                        fixed_test_code = call_azure_openai(
+                            deployment_name=AZURE_OPENAI_DEPLOYMENT_NAME,
+                            prompt=prompt,
                             max_tokens=700,
+                            temperature=0.4 + (0.1 * attempt),
                         )
-                        fixed_test_code = response['choices'][0]['message']['content']
 
                         # Overwrite the test file with the new code
                         with open(test_path, "w") as file:
