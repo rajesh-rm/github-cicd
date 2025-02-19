@@ -1,0 +1,40 @@
+name: Fetch Runner Registration Token
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch-token:
+    runs-on: ubuntu-latest
+    outputs:
+      registration_token: ${{ steps.fetch_token.outputs.registration_token }}
+    steps:
+      - name: Fetch registration token from GitHub API
+        id: fetch_token
+        env:
+          # Expose the secret as an environment variable.
+          RUNNER_CREDENTIAL: ${{ secrets.RUNNER_CREDENTIAL }}
+        run: |
+          echo "Fetching runner registration token..."
+          
+          # Call the GitHub API endpoint to create a registration token.
+          # For repository runners, the URL uses the github.repository context.
+          response=$(curl -s -X POST \
+            -H "Authorization: token $RUNNER_CREDENTIAL" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runners/registration-token")
+          
+          # Print the complete JSON response to the console.
+          echo "Full JSON Response:"
+          echo "$response"
+          
+          # Extract the registration token using jq.
+          registration_token=$(echo "$response" | jq -r .token)
+          echo "Extracted Registration Token: $registration_token"
+          
+          # Set the registration token as a step output.
+          echo "registration_token=$registration_token" >> "$GITHUB_OUTPUT"
+          
+          # Append the registration token to the workflow summary.
+          echo "### Runner Registration Token" >> "$GITHUB_STEP_SUMMARY"
+          echo "$registration_token" >> "$GITHUB_STEP_SUMMARY"
